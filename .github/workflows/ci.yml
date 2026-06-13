@@ -1,6 +1,5 @@
 name: CI/CD SIQAL Pipeline
 
-# El pipeline se activa al hacer push o abrir un PR hacia las 3 ramas principales
 on:
   push:
     branches: [ "dev", "qa", "main" ]
@@ -8,7 +7,6 @@ on:
     branches: [ "dev", "qa", "main" ]
 
 jobs:
-  # 1. Job de Validación (Se ejecuta siempre)
   build_and_test:
     name: Compilación y Pruebas
     runs-on: ubuntu-latest
@@ -30,33 +28,25 @@ jobs:
           npm run lint
           npx tsc --noEmit
 
-      - name: Construir aplicación Next.js (Prueba de humo local)
+      - name: Construir aplicación Next.js
         run: npm run build
         env:
-          # Se usan variables de entorno de prueba para la compilación
           DATABASE_URL: ${{ secrets.DATABASE_URL_DEV }}
 
-  # 2. Job de Despliegue en QA (Solo si la rama es QA y el build fue exitoso)
   deploy_qa:
     name: Despliegue en Entorno QA
     needs: build_and_test
     if: github.ref == 'refs/heads/qa' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - name: Notificar y desplegar en qa
-        run: |
-          echo "Desplegando en el entorno de qa para pruebas de estrés..."
-          # Ejemplo de trigger ligero a un servicio de hosting vía Webhook
-          curl -X POST ${{ secrets.QA_DEPLOY_HOOK }}
+      - name: Desplegar en QA
+        run: echo "Simulando despliegue en QA..."
 
-  # 3. Job de Despliegue en main (Solo si la rama es main)
   deploy_prod:
-    name: Despliegue en Entorno main
+    name: Despliegue en Entorno Producción
     needs: build_and_test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - name: Desplegar en main
-        run: |
-          echo "Ejecutando despliegue final validado por el líder de proyecto..."
-          curl -X POST ${{ secrets.PROD_DEPLOY_HOOK }}
+      - name: Desplegar en Producción
+        run: echo "Simulando despliegue final en Producción..."
