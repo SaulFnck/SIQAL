@@ -7,8 +7,8 @@ on:
     branches: [ "dev", "qa", "main" ]
 
 jobs:
-  build_and_test:
-    name: Compilación y Pruebas
+  backend_ci:
+    name: Backend - Compilación y Pruebas
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -35,9 +35,35 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_DEV }}
 
+  frontend_ci:
+    name: Frontend - Compilación y Pruebas
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: FRONTEND
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: FRONTEND/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Ejecutar Linter
+        run: npm run lint
+
+      - name: Construir Frontend
+        run: npm run build
+
   deploy_qa:
     name: Despliegue en Entorno QA
-    needs: build_and_test
+    needs: [backend_ci, frontend_ci]
     if: github.ref == 'refs/heads/qa' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
@@ -46,7 +72,7 @@ jobs:
 
   deploy_prod:
     name: Despliegue en Entorno Producción
-    needs: build_and_test
+    needs: [backend_ci, frontend_ci]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
