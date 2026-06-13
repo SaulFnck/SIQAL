@@ -4,8 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   User, 
   ArrowLeft, 
-  Building2, 
-  Briefcase, 
   AlertTriangle, 
   FileText, 
   Lock, 
@@ -15,7 +13,6 @@ import {
   Trash2, 
   Plus, 
   Eye, 
-  HelpCircle, 
   Check, 
   Loader2,
   Calendar,
@@ -97,13 +94,15 @@ export default function Home() {
   const [draftSaveStatus, setDraftSaveStatus] = useState<'saved' | 'saving' | 'error' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Generate a draft ID if not exists
-  useEffect(() => {
-    if (view === 'report-form' && !draftId) {
-      const newId = 'draft_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-      setDraftId(newId);
-    }
-  }, [view, draftId]);
+  // Start a new report flow and pre-generate a draft ID
+  const startNewReport = () => {
+    setFormData(initialFormState);
+    setAttachedFiles([]);
+    const newId = 'draft_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+    setDraftId(newId);
+    setCurrentStep(1);
+    setView('report-form');
+  };
 
   // Load backend history and drafts
   const loadDashboardData = async () => {
@@ -125,7 +124,10 @@ export default function Home() {
   // Trigger load when going to dashboard
   useEffect(() => {
     if (view === 'dashboard') {
-      loadDashboardData();
+      const timer = setTimeout(() => {
+        loadDashboardData();
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [view]);
 
@@ -182,9 +184,11 @@ export default function Home() {
   };
 
   // Helper to update nestable state & trigger autosave
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateNestedState = (section: keyof IReportData, field: string, value: any) => {
     setFormData((prev) => {
       const updatedSection = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ...(prev[section] as Record<string, any>),
         [field]: value
       };
@@ -201,6 +205,7 @@ export default function Home() {
   };
 
   // Direct state updates (e.g. tipoReporte)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateDirectState = (field: keyof IReportData, value: any) => {
     setFormData((prev) => {
       const newFormData = {
@@ -364,10 +369,11 @@ export default function Home() {
       setAcceptedTerms(false);
 
       setView('success');
-    } catch (err: any) {
-      console.error(err);
+    } catch (err) {
+      const error = err as Error;
+      console.error(error);
       clearInterval(timer);
-      setSubmitError(err.message || 'Error inesperado al enviar la denuncia. Reintente por favor.');
+      setSubmitError(error.message || 'Error inesperado al enviar la denuncia. Reintente por favor.');
     } finally {
       setSubmitting(false);
     }
@@ -406,7 +412,7 @@ export default function Home() {
         }
         // Reload dashboard
         loadDashboardData();
-      } catch (err) {
+      } catch {
         alert('Error al borrar el borrador');
       }
     }
@@ -529,11 +535,7 @@ export default function Home() {
               
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <button
-                  onClick={() => {
-                    setFormData(initialFormState);
-                    setCurrentStep(1);
-                    setView('report-form');
-                  }}
+                  onClick={startNewReport}
                   className="bg-maroon hover:bg-maroon-hover text-white text-base font-semibold px-8 py-3.5 rounded-xl shadow-md transition-colors focus:ring-4 focus:ring-maroon-light cursor-pointer"
                 >
                   Presentar un Reporte
@@ -1484,13 +1486,7 @@ export default function Home() {
                 <h2 className="text-xl font-bold text-gray-955">Panel de Usuario</h2>
               </div>
               <button
-                onClick={() => {
-                  setFormData(initialFormState);
-                  setAttachedFiles([]);
-                  setDraftId('');
-                  setCurrentStep(1);
-                  setView('report-form');
-                }}
+                onClick={startNewReport}
                 className="bg-maroon hover:bg-maroon-hover text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-xs transition-colors flex items-center gap-2"
               >
                 <Plus size={16} />
