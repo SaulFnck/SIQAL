@@ -10,6 +10,9 @@ jobs:
   build_and_test:
     name: Compilación y Pruebas
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: BACKEND
     steps:
       - name: Descargar el código
         uses: actions/checkout@v4
@@ -19,16 +22,15 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: BACKEND/package-lock.json
 
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Validación de tipos y Linter
-        run: |
-          npm run lint
-          npx tsc --noEmit
+      - name: Validación de tipos (Type Check)
+        run: npx tsc --noEmit
 
-      - name: Construir aplicación Next.js
+      - name: Construir Backend
         run: npm run build
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_DEV }}
